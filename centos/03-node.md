@@ -152,7 +152,10 @@ restart.
 *Transcript*:
 ```sh
 pdsh -g kubes systemctl enable docker kubelet
-pdsh -g kubes poweroff
+## power off the workers...
+pdsh -g nodes poweroff
+## power off master
+poweroff
 
 ## on KVM host, now, start all the VMs
 
