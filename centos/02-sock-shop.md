@@ -144,3 +144,28 @@ user-db        10.101.48.252    <none>        27017/TCP      8m
 
 The user facing IP address is kubeX:30001, i.e. 192.168.100-103:30001. You should
 be able to browse to any of kube[0-3]:30001 to reach the demo.
+
+## Conclusion
+
+At this stage we have run a smoke test, viz., the sock shop microservices demo. This is the list of images
+that the worker nodes have as a result of the sock shop demo:
+
+```sh
+[root@kube0 install]# pdsh -g nodes docker images | sed 's/^.......//' | sort | uniq 
+docker.io/mongo                             latest              57c67caab3d8        11 hours ago        359.1 MB
+docker.io/rabbitmq                          3.6.8               8cdcbee37f62        3 months ago        179.4 MB
+docker.io/weaveworksdemos/carts             0.4.8               c00473736118        3 months ago        197.6 MB
+docker.io/weaveworksdemos/catalogue         0.3.5               0bd359b6d6e8        3 months ago        41.22 MB
+docker.io/weaveworksdemos/catalogue-db      0.3.0               9d0c5eb88949        6 months ago        400.1 MB
+docker.io/weaveworksdemos/front-end         0.3.12              b54402ef78a5        3 months ago        119.8 MB
+docker.io/weaveworksdemos/orders            0.4.7               8275c5b9181b        3 months ago        197.6 MB
+docker.io/weaveworksdemos/payment           0.4.3               4f2c23055dcd        3 months ago        32.46 MB
+docker.io/weaveworksdemos/queue-master      0.3.1               76f0de7a12ac        4 months ago        178.5 MB
+docker.io/weaveworksdemos/shipping          0.4.8               4fc533e8180a        3 months ago        198.6 MB
+docker.io/weaveworksdemos/user              0.4.4               ab8af7050996        3 months ago        35.26 MB
+docker.io/weaveworksdemos/user-db           0.4.0               196601f91030        6 months ago        716.9 MB
+docker.io/weaveworks/weave-kube             2.0.1               d2099d50a03b        7 days ago          100.7 MB
+docker.io/weaveworks/weave-npc              2.0.1               4f71bca714a3        7 days ago          54.69 MB
+gcr.io/google_containers/kube-proxy-amd64   v1.7.0              d2d44013d0f8        7 days ago          114.7 MB
+gcr.io/google_containers/pause-amd64        3.0                 99e59f495ffa        14 months ago       746.9 kB
+```
