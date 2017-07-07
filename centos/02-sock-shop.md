@@ -151,7 +151,7 @@ At this stage we have run a smoke test, viz., the sock shop microservices demo. 
 that the worker nodes have as a result of the sock shop demo:
 
 ```sh
-[root@kube0 install]# pdsh -g nodes docker images | sed 's/^.......//' | sort | uniq 
+[root@kube0 install]# pdsh -g nodes docker images | sed 's/^.......//' | grep -v REPOSITORY | sort | uniq
 docker.io/mongo                             latest              57c67caab3d8        11 hours ago        359.1 MB
 docker.io/rabbitmq                          3.6.8               8cdcbee37f62        3 months ago        179.4 MB
 docker.io/weaveworksdemos/carts             0.4.8               c00473736118        3 months ago        197.6 MB
