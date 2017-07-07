@@ -1,6 +1,6 @@
 # 00 Installation
 
-In this transcript we install kubeadm  until just before a network addon. All pods will be running except for kube-dns (to be expected, since we don't have a network).
+In this transcript we install kubeadm  until just before a network add-on. All pods will be running except for kube-dns (to be expected, since we don't have a network).
 
 We heavily make use of pdsh to run command on all four nodes.
 
@@ -96,6 +96,23 @@ In this transcript we get kubernetes running prior to a network.
 pdsh -g kubes modprobe -v br_netfilter
 pdsh -g kubes 'echo 1 > /proc/sys/net/bridge/bridge-nf-call-iptables'
 
+## make this persistent across boots
+cat > netfilter.conf <<EOF
+br_netfilter
+EOF
+
+pdcp -g kubes netfilter.conf /etc/modules-load.d/netfilter.conf
+
+cat > 10-docker.conf <<EOF
+net.ipv4.ip_forward = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+
+pdcp -g kubes 10-docker.conf /etc/sysctl.d/10-docker.conf
+
+
+
+
 ## now bootstrap kubeadm, this is only run on the master: kube0
 kubeadm init
 
@@ -126,8 +143,8 @@ Verify:
 [apiclient] All control plane components are healthy after 55.500900 seconds
 [token] Using token: 96f75e.440cb6581dc488ba
 [apiconfig] Created RBAC rules
-[addons] Applied essential addon: kube-proxy
-[addons] Applied essential addon: kube-dns
+[add-ons] Applied essential add-on: kube-proxy
+[add-ons] Applied essential add-on: kube-dns
 
 Your Kubernetes master has initialized successfully!
 
@@ -139,7 +156,7 @@ To start using your cluster, you need to run (as a regular user):
 
 You should now deploy a pod network to the cluster.
 Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
-  http://kubernetes.io/docs/admin/addons/
+  http://kubernetes.io/docs/admin/add-ons/
 
 You can now join any number of machines by running the following on each node
 as root:
