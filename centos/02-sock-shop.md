@@ -1,6 +1,6 @@
 # Sock Shop Demo
 
-The kubeadm tutorial recommends  sock shop demo as a smoke test that the kubernetes cluster is up and running.
+The kubeadm tutorial uses the sock shop demo as a smoke test that the kubernetes cluster is up and running.
 
 In this transcript, we will install the sock shop demo.
 
