@@ -151,7 +151,7 @@ At this stage we have run a smoke test, viz., the sock shop microservices demo. 
 that the worker nodes have as a result of the sock shop demo:
 
 ```sh
-[root@kube0 install]# pdsh -g nodes docker images | sed 's/^.......//' | grep -v REPOSITORY | sort | uniq
+[root@kube0 install]$$ pdsh -g nodes docker images | sed 's/^.......//' | grep -v REPOSITORY | sort | uniq
 docker.io/mongo                             latest              57c67caab3d8        11 hours ago        359.1 MB
 docker.io/rabbitmq                          3.6.8               8cdcbee37f62        3 months ago        179.4 MB
 docker.io/weaveworksdemos/carts             0.4.8               c00473736118        3 months ago        197.6 MB
@@ -173,11 +173,11 @@ gcr.io/google_containers/pause-amd64        3.0                 99e59f495ffa    
 If you're wondering why there is no carts-db or order-db images to back the pods, it is because those pods
 are backed by the mongo db image:
 
-```sh
-[root@kube0 install]$$ sudo -u centos kubectl describe po orders-db-3728196820-zvfkh -n sock-shop | grep Image
+```
+[root@kube0 install]# sudo -u centos kubectl describe po orders-db-3728196820-zvfkh -n sock-shop | grep Image
     Image:              mongo
     Image ID:           docker-pullable://docker.io/mongo@sha256:3f4d30f7f0b256e14bd24df6d931eafb04403f3938792fd17c96075705c18e53
-[root@kube0 install]$$ sudo -u centos kubectl describe po carts-db-1721187500-b9nj7 -n sock-shop | grep Image
+[root@kube0 install]# sudo -u centos kubectl describe po carts-db-1721187500-b9nj7 -n sock-shop | grep Image
     Image:              mongo
     Image ID:           docker-pullable://docker.io/mongo@sha256:3f4d30f7f0b256e14bd24df6d931eafb04403f3938792fd17c96075705c18e53
 ```
