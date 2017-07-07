@@ -182,7 +182,7 @@ kube-scheduler-kube0            1/1       Running             0          6m
 
 ## Conclusion
 
-At this stage we have successfully bootstraped kubernetes without network. The user centos, is a non-root cluster-admin. This user is authenticated and authorised to kubernetes using the credentials in `~/centos/.kube/config`.
+At this stage we have successfully bootstraped kubernetes without network. The user centos, is a non-root cluster-admin. This user is authenticated and authorised to kubernetes using the credentials in `~centos/.kube/config`.
 
 We will go deeper into kubernetes RBAC (role-based access control) later.
 
