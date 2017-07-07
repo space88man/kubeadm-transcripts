@@ -82,7 +82,7 @@ orders-db-3728196820-zvfkh      1/1       Running             0          5m
 payment-3050936124-ssx0t        1/1       Running             0          5m
 queue-master-2067646375-602wf   0/1       ContainerCreating   0          5m
 rabbitmq-241640118-3hr9r        0/1       ContainerCreating   0          5m
-shipping-2463450563-gj3pq       0/1       ContainerCreating   0          5mq
+shipping-2463450563-gj3pq       0/1       ContainerCreating   0          5m
 user-1574605338-5phcq           0/1       ContainerCreating   0          4m
 user-db-3152184577-qp5h1        0/1       ContainerCreating   0          4m
 
