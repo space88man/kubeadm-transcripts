@@ -1,18 +1,18 @@
 # Network Transcript
 
-In this transcript, we will install the weave network addon. All our pods will get IP addresses
+In this transcript, we will install the weave network add-on. All our pods will get IP addresses
 on 10.32.0.0/12. Kubernetes will continue to assign services to 10.96.0.0/12 (standard network
 setup by kubeadm).
 
 The mapping of externally visible service IP address/port to 10.96.0.0/12 to 10.32.0.0/12
-is handled transparently by kubernetes+network addon.
+is handled transparently by kubernetes+network add-on.
 
-There are many (too many?) network addon choices: in this transcript we will use [weave](https://github.com/weaveworks/weave).
+There are many (too many?) network add-on choices: in this transcript we will use [weave](https://github.com/weaveworks/weave).
 In other transcripts, we will try flannel and romana.
 
-## Installation of weave network addon
+## Installation of weave network add-on
 
-Weave recommends using the network addon rather than integrating kubernetes with an external SDN.
+Weave recommends using the network add-on rather than integrating kubernetes with an external configured weave SDN.
 
 *Transcript*:
 
