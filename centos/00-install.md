@@ -6,7 +6,7 @@ We heavily make use of pdsh to run command on all four nodes.
 
 ## Prerequisites
 
-* 4 CentOS VMs, with internet access, and EPEL repository enabled
+* 4 CentOS VMs, 192.168.125.100-103/24, with internet access, and EPEL repository enabled
 * Ensure docker is running and can pull and run basic images on each node.
 * root has password-less ssh from kube0 to kube[0-3]
 * non-root user: centos has  password-less ssh from kube0 to kube[0-3] and password-less sudo on all nodes
