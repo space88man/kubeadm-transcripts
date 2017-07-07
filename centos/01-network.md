@@ -4,9 +4,11 @@ In this transcript, we will install the weave network addon. All our pods will g
 on 10.32.0.0/12. Kubernetes will continue to assign services to 10.96.0.0/12 (standard network
 setup by kubeadm).
 
-The mapping of externally visible service IP address/port to 10.96.0.0/12 to 10.32.0.0/12 is handled transparnetly by kubernetes/network addon.
+The mapping of externally visible service IP address/port to 10.96.0.0/12 to 10.32.0.0/12
+is handled transparently by kubernetes+network addon.
 
-There are many (too many?) network addon choices: in this transcript we will use (weave)[https://github.com/weaveworks/weave]. In other transcripts, we will try flannel and romana.
+There are many (too many?) network addon choices: in this transcript we will use [weave](https://github.com/weaveworks/weave).
+In other transcripts, we will try flannel and romana.
 
 ## Installation of weave network addon
 
@@ -17,7 +19,7 @@ Weave recommends using the network addon rather than integrating kubernetes with
 ```sh
 sudo -u centos kubectl apply -f https://git.io/weave-kube-1.6
 
-## less time take to pull docker images, it takes up to 1 min for the weave pods
+## less time taken to pull docker images, it takes up to 1 min for the weave pods
 ## and kube-dns to be functional
 ```
 Output:
@@ -71,7 +73,7 @@ Finally we can join worker nodes, by default, user pods are not run on the maste
 
 ```sh
 ## join 3 worker nodes
-## the token comes from the output of kubeadm init
+## the token comes from the output of kubeadm init in 00-install.md
 pdsh -g nodes kubeadm join --token 96f75e.440cb6581dc488ba 192.168.125.100:6443
 ```
 
@@ -148,6 +150,7 @@ kube3     Ready     2m        v1.7.0
 
 
 ## polling for weave-net-* pods to be Running
+watch sudo -u centos kubectl get po -n kube-system
 Every 2.0s: sudo -u centos kubectl get po -n kube-system                                                         Fri Jul  7 09:02:04 2017
 
 NAME                            READY     STATUS    RESTARTS   AGE
