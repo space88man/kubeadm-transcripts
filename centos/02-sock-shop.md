@@ -1,6 +1,6 @@
 # Sock Shop Demo
 
-The kubeadm has a sock shop demo as a smoke test that kubernetes is up and running.
+The kubeadm tutorial recommends  sock shop demo as a smoke test that the kubernetes cluster is up and running.
 
 In this transcript, we will install the sock shop demo.
 
@@ -50,7 +50,7 @@ service "user" created
 Verify:
 ```sh
 ## we poll until all pods are Running
-sudo -u centos kubectl get po -n sock-shop
+watch sudo -u centos kubectl get po -n sock-shop
 
 ## ...installing...
 Every 2.0s: sudo -u centos kubectl get po -n sock-shop                                                           Fri Jul  7 09:15:03 2017
@@ -143,4 +143,4 @@ user-db        10.101.48.252    <none>        27017/TCP      8m
 ```
 
 The user facing IP address is kubeX:30001, i.e. 192.168.100-103:30001. You should
-be able to browse to any of kube[0-3]:30001 so reach the demo.
+be able to browse to any of kube[0-3]:30001 to reach the demo.
