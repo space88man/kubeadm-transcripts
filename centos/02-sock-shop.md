@@ -169,3 +169,15 @@ docker.io/weaveworks/weave-npc              2.0.1               4f71bca714a3    
 gcr.io/google_containers/kube-proxy-amd64   v1.7.0              d2d44013d0f8        7 days ago          114.7 MB
 gcr.io/google_containers/pause-amd64        3.0                 99e59f495ffa        14 months ago       746.9 kB
 ```
+
+If you're wondering why there is no carts-db or order-db images to back the pods, it is because those pods
+are backed by the mongo db image:
+
+```sh
+[root@kube0 install]$$ sudo -u centos kubectl describe po orders-db-3728196820-zvfkh -n sock-shop | grep Image
+    Image:              mongo
+    Image ID:           docker-pullable://docker.io/mongo@sha256:3f4d30f7f0b256e14bd24df6d931eafb04403f3938792fd17c96075705c18e53
+[root@kube0 install]$$ sudo -u centos kubectl describe po carts-db-1721187500-b9nj7 -n sock-shop | grep Image
+    Image:              mongo
+    Image ID:           docker-pullable://docker.io/mongo@sha256:3f4d30f7f0b256e14bd24df6d931eafb04403f3938792fd17c96075705c18e53
+```
