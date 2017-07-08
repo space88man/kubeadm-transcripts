@@ -99,6 +99,12 @@ rabbitmq
 NoneB
 
 ## snapshot
+[root@kube0 centos]# rm -f snapshotdb
+[root@kube0 centos]# etcdctl --endpoints http://127.0.0.1:2379 snapshot save snapshotdb
+Snapshot saved at snapshotdb
+[root@kube0 centos]# ls -l snapshotdb
+-rw-r--r--. 1 root root 4890656 Jul  8 00:54 snapshotdb
+
 [root@kube0 centos]#  etcdctl --write-out=table snapshot status snapshotdb
 +----------+----------+------------+------------+
 |   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
