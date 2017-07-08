@@ -23,12 +23,14 @@ yum -y install etcd
 
 export ETCDCTL_API=3
 
-etcdctl get /registry --prefix --keys-only | sort | uniq
+## --endpoints is superfluous here, as this is the default value;
+## included here for illustrative purposes
+etcdctl --endpoints 127.0.0.1:2379 get /registry --prefix --keys-only | sort | uniq
 
 ## play around with other etcdctl commands
 
 ## create a snapshot, creates a file "snapshotdb" in the current directory
-etcdctl --endpoints http://127.0.0.1:2379 snapshot save snapshotdb
+etcdctl snapshot save snapshotdb
 
 ## check the snapshot file
 etcdctl --write-out=table snapshot status snapshotdb
@@ -45,15 +47,16 @@ Error: unknown command "ls" for "etcdctl"
 Run 'etcdctl --help' for usage.
 Error:  unknown command "ls" for "etcdctl"
 
-## at ETCDCTL_API=2, you still cannot inspect the kubernetes store
+## even using ETCDCTL_API=2, you still cannot inspect the kubernetes store
 ## because the stores are incompatible
 
 [root@kube0 centos]# ETCDCTL_API=2 etcdctl ls / --recursive
 [root@kube0 centos]#  ## nothing to see here, because v2 is incompatible with v3
 
 ## run actual v3 commands...
+## add superfluous --endpoints option for illustration
 
-[root@kube0 centos]# etcdctl get /registry/ --prefix --keys-only | sort | uniq 
+[root@kube0 centos]# etcdctl --endpoints http://127.0.0.1:2379 get /registry/ --prefix --keys-only | sort | uniq 
 
 /registry/apiregistration.k8s.io/apiservices/v1.
 /registry/apiregistration.k8s.io/apiservices/v1alpha1.rbac.authorization.k8s.io
@@ -100,7 +103,7 @@ NoneB
 
 ## snapshot
 [root@kube0 centos]# rm -f snapshotdb
-[root@kube0 centos]# etcdctl --endpoints http://127.0.0.1:2379 snapshot save snapshotdb
+[root@kube0 centos]# etcdctl snapshot save snapshotdb
 Snapshot saved at snapshotdb
 [root@kube0 centos]# ls -l snapshotdb
 -rw-r--r--. 1 root root 4890656 Jul  8 00:54 snapshotdb
