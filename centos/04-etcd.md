@@ -11,7 +11,7 @@ Any etcdctl documentation that uses `etcdctl ls` is indicative of v2, and does n
 kubernetes v3 store. 
 
 We will install etcd on kube0 and inspect the etcd store.
-All though the current version is 3.1.9, and kubernetes is using 3.0.14, this is not significant
+Although the current version is 3.1.9, and kubernetes is using 3.0.14, this is not significant
 as we are only using it to explore the store.
 
 *Transcript*:
