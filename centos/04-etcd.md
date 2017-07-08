@@ -26,6 +26,12 @@ export ETCDCTL_API=3
 etcdctl get /registry --prefix --keys-only | sort | uniq
 
 ## play around with other etcdctl commands
+
+## create a snapshot, creates a file "snapshotdb" in the current directory
+etcdctl --endpoints http://127.0.0.1:2379 snapshot save snapshotdb
+
+## check the snapshot file
+etcdctl --write-out=table snapshot status snapshotdb
 ```
 
 Verify:
@@ -92,5 +98,12 @@ rabbitmq
 10.102.93.119"  ClusterIP:
 NoneB
 
+## snapshot
+[root@kube0 centos]#  etcdctl --write-out=table snapshot status snapshotdb
++----------+----------+------------+------------+
+|   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
++----------+----------+------------+------------+
+| 32aeb654 |    85232 |        977 | 4.9 MB     |
++----------+----------+------------+------------+
 ```
 
