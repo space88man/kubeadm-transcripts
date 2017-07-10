@@ -6,7 +6,7 @@ will explore the etcd database.
 ## Background
 
 Etcd is used to store state and trigger changes for the kubernetes cluster.
-The most important take away is that kubernetes uses etcd **v3**.
+The most important speed bump is that kubernetes uses etcd **v3**.
 Any etcdctl documentation that uses `etcdctl ls` is indicative of v2, and does not work with the
 kubernetes v3 store. 
 
@@ -59,8 +59,9 @@ Error:  unknown command "ls" for "etcdctl"
 ## even using ETCDCTL_API=2, you still cannot inspect the kubernetes store
 ## because the stores are incompatible
 
+## nothing to see here, because v2 is incompatible with v3
 [root@kube0 centos]# ETCDCTL_API=2 etcdctl ls / --recursive
-[root@kube0 centos]#  ## nothing to see here, because v2 is incompatible with v3
+[root@kube0 centos]#  
 
 ## run actual v3 commands...
 ## add superfluous --endpoints option for illustration
@@ -92,7 +93,7 @@ Error:  unknown command "ls" for "etcdctl"
 
 ## ... 500 lines omitted ##
 ## most of the values are opaque binary data
-## lets dump one key, and inspect for ascii
+## let's dump one key, and inspect for ascii
 ## with the sock shop demo still running...
 
 [root@kube0 centos]# etcdctl get /registry/services/specs/sock-shop/rabbitmq | strings
@@ -132,10 +133,10 @@ In this transcript we will teardown the kubeadm etcd.
 
 Kubernetes requires an etcd cluster: how did kubeadm solve this for us?
 
-* kubeadm creates a single-node etcd cluster; the etcd process run in its own
+* kubeadm creates a single-node etcd cluster; the etcd process runs in its own
   pod using the host network, so it can be reached at 127.0.0.1:2379.
 * the etcd-kube0 pod mounts `/var/lib/etcd` from the docker host, so that
-  the data persists across reboots.
+  data persists across reboots.
   
 
 ### Etcd process
@@ -148,10 +149,10 @@ ps -ef | grep etcd.*listen
 
 ## the etcd pod consists of two containers
 ## note the pause-amd64 image is always part of a kubernetes pod
-## so the the etcd-amd64 is the real workhorse
+## so the etcd-amd64 image is the real workhorse
 docker ps | grep etcd
 
-## Lets see the host mount: /var/lib/etcd is persistent
+## Let's see that host mount /var/lib/etcd provides persistence
 ## we need to inspect the correct container, i.e, the one
 ## that is backed by etcd-amd64
 docker inspect 5ef0fb8340b6
@@ -162,7 +163,6 @@ Output:
 [root@kube0 centos]# ps -ef | grep etcd.*listen
 root      2137  2122  0 10:17 ?        00:00:28 etcd --listen-client-urls=http://127.0.0.1:2379 --advertise-client-urls=http://127.0.0.1:2379 --data-dir=/var/lib/etcd
 
-## kubernetes always injects pause-amd64 into the pod
 ## the real workhorse is etcd-amd64
 [root@kube0 centos]# docker ps | grep etcd
 5ef0fb8340b6        gcr.io/google_containers/etcd-amd64@sha256:d83d3545e06fb035db8512e33bd44afb55dea007a3abd7b17742d3ac6d235940                      "etcd --listen-client"   About an hour ago   Up About an hour                        k8s_etcd_etcd-kube0_kube-system_9fb4ea9ba2043e46f75eec93827c4ce3_4
@@ -171,7 +171,7 @@ root      2137  2122  0 10:17 ?        00:00:28 etcd --listen-client-urls=http:/
 
 ## Look for host mounts for data persistence
 [root@kube0 centos]# docker inspect 5ef0fb8340b6
-## we have found how the etcd cluster created by kubeadm persists data
+## we now can see how the etcd cluster created by kubeadm persists data
 ## --cut--
         "Mounts": [
             {
@@ -212,14 +212,15 @@ root      2137  2122  0 10:17 ?        00:00:28 etcd --listen-client-urls=http:/
 
 etcd as installed by kubeadm, is not production ready. It is a single node
 cluster using the docker host filesystem for state in `/var/lib/etcd`. This
-obviously causes disk contention with docker, and the fact that we are
-running in a VM with the vdisk being a file on the host filesystem means
+causes disk contention with docker, and the fact that we are
+running in a VM with the vdisk being a file on the host filesystem guarantees
 that we will get horrible latencies for fsync — which is what etcd uses to
 persist data.
 
 Our VM vdisk was deliberately created on a regular HD. We can now
 observe etcd complaining about bad latencies.
-*Transcript*
+
+*Transcript*:
 
 ```sh
 ## the qcow2 image backing kube0 is on a regular HD
@@ -231,9 +232,9 @@ sudo -u centos kubelet logs -f etcd-kube0 -n kube-system
 
 Output:
 ```
-## non-stop warnings due to crappy latency:
-## disk contention with docker, and we are running in a VM
-## using a qcow2 backing file on a regular HD
+## continuous warnings due to bad latency:
+## disk contention with docker, we are running in a VM
+## and using a qcow2 backing file on a regular HD
 2017-07-09 07:16:49.497594 W | etcdserver: apply entries took too long [561.342142ms for 1 entries]
 2017-07-09 07:16:49.497923 W | etcdserver: avoid queries with large range/delete range!
 2017-07-09 07:16:59.561454 W | etcdserver: apply entries took too long [225.44197ms for 1 entries]
@@ -243,20 +244,21 @@ Output:
 ### 2nd vdisk backed by SSD
 
 In this transcript, we will move /var/lib/etcd to an SSD drive. We will no longer have disk contention
-with docker, and much decreased logging.
+with docker, and much decreased warnings.
 
-If you are able to add a second vdisk with backing file on an SSD; create a filesystem on the second
-disk and mount /var/lib/etcd there.
+Add a second vdisk with backing file on an SSD, create a filesystem on the second
+disk, and mount /var/lib/etcd there.
 
 *Transcript*
 
 ```sh
-## assume you have a second vdisk backed by qcow2 image on a SSD drive
-## attach this disk to the VM
-
 ## on the KVM host create a backing file etcd-low-latency.qcow2  on an SSD drive
+## cd to <some-directory-on-an-SSD>
+## we would have better performance if using raw instead of qcow2
+## this to show that SSD+qcow2 is almost 'good enough'
+
 qemu-img create -f qcow2 etcd-low-latency.qcow2 20G
-virsh attach kube0 etcd-low-latency.qcow2 /dev/sdb --driver qemu --subdriver=qcow2
+virsh attach kube0 $PWD/etcd-low-latency.qcow2 /dev/sdb --driver qemu --subdriver=qcow2
 
 ## back on kube0; make sure sdb is recognised
 ls -l /dev/sdb
@@ -272,17 +274,17 @@ mv /var/lib/etcd /var/lib/etcd.backup
 mkdir /var/lib/etcd
 mount /dev/varvg/etcd /var/lib/etcd
 rsync -avz /var/lib/etcd.backup/ /var/lib/etcd/
+
 ## make SELinux happy
 restorecon -R /var/lib/etcd/
 chcon -u system_u -R /var/lib/etcd
 
-## restart with etcd backed on an SSD
+## restart with /var/lib/etcd now backed on an SSD
 systemctl start docker kubelet
 
 ## we need to make this persistent otherwise
-## we will not have /var/lib/etcd on reboot
+## we lose /var/lib/etcd on reboot
 echo '/dev/varvg/etcd /var/lib/etcd   xfs     defaults 1 1' >> /etc/fstab
-
 ```
 
 Verify:
