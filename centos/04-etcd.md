@@ -25,6 +25,13 @@ yum -y install etcd
 
 export ETCDCTL_API=3
 
+## v2 command: guaranteed to fail
+etcdctl ls / --recursive
+
+## v3 stores are incompatible with v2: we will see nothing here
+## even if we try to force v2
+ETCDCTL_API=2 etcdctl ls / --recursive
+
 ## --endpoints is superfluous here, as this is the default value;
 ## included here for illustrative purposes
 etcdctl --endpoints 127.0.0.1:2379 get /registry --prefix --keys-only | sort | uniq
@@ -123,6 +130,86 @@ Snapshot saved at snapshotdb
 
 In this transcript we will teardown the kubeadm etcd.
 
+Kubernetes requires an etcd cluster: how did kubeadm solve this for us?
+
+* kubeadm creates a single-node etcd cluster; the etcd process run in its own
+  pod using the host network, so it can be reached at 127.0.0.1:2379.
+* the etcd-kube0 pod mounts `/var/lib/etcd` from the docker host, so that
+  the data persists across reboots.
+  
+
+### Etcd process
+
+*Transcript*:
+
+```sh
+## we can observe the actual etcd command line
+ps -ef | grep etcd.*listen
+
+## the etcd pod consists of two containers
+## note the pause-amd64 image is always part of a kubernetes pod
+## so the the etcd-amd64 is the real workhorse
+docker ps | grep etcd
+
+## Lets see the host mount: /var/lib/etcd is persistent
+## we need to inspect the correct container, i.e, the one
+## that is backed by etcd-amd64
+docker inspect 5ef0fb8340b6
+```
+
+Output:
+```
+[root@kube0 centos]# ps -ef | grep etcd.*listen
+root      2137  2122  0 10:17 ?        00:00:28 etcd --listen-client-urls=http://127.0.0.1:2379 --advertise-client-urls=http://127.0.0.1:2379 --data-dir=/var/lib/etcd
+
+## kubernetes always injects pause-amd64 into the pod
+## the real workhorse is etcd-amd64
+[root@kube0 centos]# docker ps | grep etcd
+5ef0fb8340b6        gcr.io/google_containers/etcd-amd64@sha256:d83d3545e06fb035db8512e33bd44afb55dea007a3abd7b17742d3ac6d235940                      "etcd --listen-client"   About an hour ago   Up About an hour                        k8s_etcd_etcd-kube0_kube-system_9fb4ea9ba2043e46f75eec93827c4ce3_4
+89112d52f34a        gcr.io/google_containers/pause-amd64:3.0                                                                                         "/pause"                 About an hour ago   Up About an hour                        k8s_POD_etcd-kube0_kube-system_9fb4ea9ba2043e46f75eec93827c4ce3_4
+
+
+## Look for host mounts for data persistence
+[root@kube0 centos]# docker inspect 5ef0fb8340b6
+## we have found how the etcd cluster created by kubeadm persists data
+## --cut--
+        "Mounts": [
+            {
+                "Source": "/etc/ssl/certs",
+                "Destination": "/etc/ssl/certs",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Source": "/var/lib/etcd",
+                "Destination": "/var/lib/etcd",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Source": "/etc/kubernetes",
+                "Destination": "/etc/kubernetes",
+                "Mode": "ro",
+                "RW": false,
+                "Propagation": "rprivate"
+            },
+            {
+                "Source": "/var/lib/kubelet/pods/9fb4ea9ba2043e46f75eec93827c4ce3/containers/etcd/6d61cf4f",
+                "Destination": "/dev/termination-log",
+                "Mode": "Z",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+
+## --cut--
+```
+
+
+### Bad disk performance
+
 etcd as installed by kubeadm, is not production ready. It is a single node
 cluster using the docker host filesystem for state in `/var/lib/etcd`. This
 obviously causes disk contention with docker, and the fact that we are
@@ -132,8 +219,6 @@ persist data.
 
 Our VM vdisk was deliberately created on a regular HD. We can now
 observe etcd complaining about bad latencies.
-
-### Bad disk performance
 *Transcript*
 
 ```sh
