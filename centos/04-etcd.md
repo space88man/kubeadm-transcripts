@@ -81,7 +81,7 @@ Error:  unknown command "ls" for "etcdctl"
 /registry/certificatesigningrequests/node-csr-xPVfee56Bm6rLJ4o7g4GMLBJFewHS9vNi9hPFjf-nkY
 /registry/clusterrolebindings/cluster-admin
 
-## ...over 200 lines omitted ##
+## ... 500 lines omitted ##
 ## most of the values are opaque binary data
 ## lets dump one key, and inspect for ascii
 ## with the sock shop demo still running...
