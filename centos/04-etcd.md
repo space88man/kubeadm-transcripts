@@ -278,6 +278,11 @@ chcon -u system_u -R /var/lib/etcd
 
 ## restart with etcd backed on an SSD
 systemctl start docker kubelet
+
+## we need to make this persistent otherwise
+## we will not have /var/lib/etcd on reboot
+echo '/dev/varvg/etcd /var/lib/etcd   xfs     defaults 1 1' >> /etc/fstab
+
 ```
 
 Verify:
