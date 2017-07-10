@@ -206,9 +206,11 @@ brw-rw----. 1 root disk 8, 16 Jul 10 10:10 /dev/sdb
 [root@kube0 centos]# mount | grep etcd
 /dev/mapper/varvg-etcd on /var/lib/etcd type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
 
-## we still get complaints, but much fewer,  once every few mins
-## instead of a continuous stream of complaints; note that the bad values
-## are still pretty good < 20ms, rather that several tens or hundeds of ms
+##
+## we still get warnings, but much fewer, once every few mins,
+## instead of a continuous stream; note that the bad values
+## are still pretty good < 20ms, rather that several tens or hundreds of ms
+##
 2017-07-10 03:07:35.261819 I | mvcc: store.index: compact 337242
 2017-07-10 03:07:35.262082 W | etcdserver: apply entries took too long [13.994439ms for 1 entries]
 2017-07-10 03:07:35.262089 W | etcdserver: avoid queries with large range/delete range!
