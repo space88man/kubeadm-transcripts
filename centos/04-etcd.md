@@ -238,4 +238,5 @@ etcd disk latency is addressed in:
   in a VM makes things much worse), we may get latencies > 10ms thus triggering a warning. In newer versions of etcd 3,
   the threshold is now [100ms](https://github.com/kubernetes/kubernetes/issues/43363).
   In our test scenarios, the HD backing file would still have triggered warnings, but the
-  SSD backing file would have been fine.  
+  SSD backing file would have been fine.  From the etcd team:
+  > Ignore the warning. We (etcd team) realized 10ms is a too tight deadline for not beefy machines. We already made that 100ms in the new releases.
