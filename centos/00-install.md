@@ -13,15 +13,21 @@ We heavily make use of pdsh to run command on all four nodes.
 * Install pdsh, pdsh-mod-genders and add the following /etc/genders file:
 
     ```
-    kubes[0-3] kubes
-    kubes[1-3] nodes
+    ## store this file as /etc/genders on kube0
+    kube[0-3] kubes
+    kube[1-3] nodes
     ```
 
 Verify:
 
 ```
-# rpm -q docker
+[root@kube0 centos]# rpm -q docker
 docker-1.12.6-28.git1398f24.el7.centos.x86_64
+
+# rpm -qa | grep pdsh
+[root@kube0 centos]# rpm -qa | grep pdsh
+pdsh-2.31-1.el7.x86_64
+pdsh-mod-genders-2.31-1.el7.x86_64
 
 # systemctl status docker
 ● docker.service - Docker Application Container Engine
