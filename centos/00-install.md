@@ -1,15 +1,24 @@
 # 00 Installation
 
-In this transcript we install kubeadm  until just before a network add-on. All pods will be running except for kube-dns (to be expected, since we don't have a network).
+In this transcript we install kubeadm  until just before a network add-on.
+All pods will be running except for kube-dns (to be expected, since we don't have a network).
 
 We heavily make use of pdsh to run command on all four nodes.
 
 ## Prerequisites
 
-* 4 CentOS VMs, 192.168.125.100-103/24, with internet access, and EPEL repository enabled
+* For the rare VM host commands that we run the transcript is written for KVM.
+  Adjust for VirtualBox or VMware as necessary.
+  The disk images will be qcow2 format. Whenever you see qcow2 replace with VDI or VMDK depending
+  on your chosen VM system. The VMs have a single network interface on a host bridged network
+  192.168.125.0/24. The host performs NAT for internet access. We use static addressing in the
+  VMs so DHCP is optional.
+* 4 CentOS VMs, named kube0–3, ip addresses 192.168.125.100-103/24 resp., with internet access, and the
+  EPEL repository enabled
 * Ensure docker is running and can pull and run basic images on each node.
 * root has password-less ssh from kube0 to kube[0-3]
-* non-root user: centos has  password-less ssh from kube0 to kube[0-3] and password-less sudo on all nodes
+* non-root user: centos has  password-less ssh from kube0 to kube[0-3] and password-less sudo on all nodes.
+  This user will stand-in for the kubernetes superuser.
 * Install pdsh, pdsh-mod-genders and add the following /etc/genders file:
 
     ```
@@ -17,6 +26,10 @@ We heavily make use of pdsh to run command on all four nodes.
     kube[0-3] kubes
     kube[1-3] nodes
     ```
+  To run commands on all four nodes: `pdsh -g kubes <command goes here>`.
+
+  To run commands only on the worker nodes: `pdsh -g nodes <command goes here>`.
+
 
 Verify:
 
@@ -24,12 +37,24 @@ Verify:
 [root@kube0 centos]# rpm -q docker
 docker-1.12.6-28.git1398f24.el7.centos.x86_64
 
-# rpm -qa | grep pdsh
 [root@kube0 centos]# rpm -qa | grep pdsh
 pdsh-2.31-1.el7.x86_64
 pdsh-mod-genders-2.31-1.el7.x86_64
 
-# systemctl status docker
+## test pdsh to all nodes
+[root@kube0 centos]# pdsh -g kubes uptime
+kube0:  10:58:04 up 47 min,  1 user,  load average: 0.16, 0.31, 0.28
+kube3:  10:58:05 up 48 min,  0 users,  load average: 0.02, 0.04, 0.10
+kube2:  10:58:05 up 47 min,  0 users,  load average: 0.06, 0.06, 0.20
+kube1:  10:58:05 up 47 min,  0 users,  load average: 0.03, 0.02, 0.17
+
+## test pdsh to all workders
+[root@kube0 centos]# pdsh -g nodes uptime                                                                                                
+kube2:  10:58:46 up 48 min,  0 users,  load average: 0.08, 0.07, 0.19
+kube3:  10:58:46 up 48 min,  0 users,  load average: 0.13, 0.08, 0.11
+kube1:  10:58:46 up 48 min,  0 users,  load average: 0.07, 0.04, 0.16
+
+[root@kube0 centos]# systemctl status docker
 ● docker.service - Docker Application Container Engine
    Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; vendor preset: disabled)
    Active: active (running) since Fri 2017-07-07 07:42:57 UTC; 6min ago

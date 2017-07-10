@@ -14,6 +14,8 @@ We will install etcd on kube0 and inspect the etcd store.
 Although the current version is 3.1.9, and kubernetes is using 3.0.14, this is not significant
 as we are only using it to explore the store.
 
+## Tasks
+
 *Transcript*:
 ```sh
 ## the etcd store is at 127.0.0.1:2379 on kube0
@@ -116,3 +118,122 @@ Snapshot saved at snapshotdb
 +----------+----------+------------+------------+
 ```
 
+
+## Teardown
+
+In this transcript we will teardown the kubeadm etcd.
+
+etcd as installed by kubeadm, is not production ready. It is a single node
+cluster using the docker host filesystem for state in `/var/lib/etcd`. This
+obviously causes disk contention with docker, and the fact that we are
+running in a VM with the vdisk being a file on the host filesystem means
+that we will get horrible latencies for fsync — which is what etcd uses to
+persist data.
+
+Our VM vdisk was deliberately created on a regular HD. We can now
+observe etcd complaining about bad latencies.
+
+### Bad disk performance
+*Transcript*
+
+```sh
+## the qcow2 image backing kube0 is on a regular HD
+## watch etcd complain about horrible disk latences
+## you will get a continuous stream of complaints...
+
+sudo -u centos kubelet logs -f etcd-kube0 -n kube-system
+```
+
+Output:
+```
+## non-stop complaints due to crappy latency:
+## disk contention with docker, and we are running in a VM
+## using a qcow2 backing file on a regular HD
+2017-07-09 07:16:49.497594 W | etcdserver: apply entries took too long [561.342142ms for 1 entries]
+2017-07-09 07:16:49.497923 W | etcdserver: avoid queries with large range/delete range!
+2017-07-09 07:16:59.561454 W | etcdserver: apply entries took too long [225.44197ms for 1 entries]
+2017-07-09 07:16:59.561694 W | etcdserver: avoid queries with large range/delete range!
+```
+
+### 2nd vdisk backed by SSD
+
+In this transcript, we will move /var/lib/etcd to an SSD drive. We will no longer have disk contention
+with docker, and much decreased logging.
+
+If you are able to add a second vdisk with backing file on an SSD; create a filesystem on the second
+disk and mount /var/lib/etcd there.
+
+*Transcript*
+
+```sh
+## assume you have a second vdisk backed by qcow2 image on a SSD drive
+## attach this disk to the VM
+
+## on the KVM host create a backing file etcd-low-latency.qcow2  on an SSD drive
+qemu-img create -f qcow2 etcd-low-latency.qcow2 20G
+virsh attach kube0 etcd-low-latency.qcow2 /dev/sdb --driver qemu --subdriver=qcow2
+
+## back on kube0; make sure sdb is recognised
+ls -l /dev/sdb
+## create filesystem
+pvcreate /dev/sdb
+vgcreate varvg /dev/sdb
+lvcreate -n etcd -L10G varvg
+mkfs -t xfs /dev/varvg/etcd
+
+## quiesce kube0
+systemctl stop docker kubelet
+mv /var/lib/etcd /var/lib/etcd.backup
+mkdir /var/lib/etcd
+mount /dev/varvg/etcd /var/lib/etcd
+rsync -avz /var/lib/etcd.backup/ /var/lib/etcd/
+## make SELinux happy
+restorecon -R /var/lib/etcd/
+chcon -u system_u -R /var/lib/etcd
+
+## restart with etcd backed on an SSD
+systemctl start docker kubelet
+```
+
+Verify:
+```
+## we have a second vdisk for our low-latency test
+[root@kube0 centos]# ls -l /dev/sd?
+brw-rw----. 1 root disk 8,  0 Jul 10 10:10 /dev/sda
+brw-rw----. 1 root disk 8, 16 Jul 10 10:10 /dev/sdb
+
+## we have moved /var/lib/etcd to the second vdisk
+[root@kube0 centos]# mount | grep etcd
+/dev/mapper/varvg-etcd on /var/lib/etcd type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+
+## we still get complaints, but much fewer,  once every few mins
+## instead of a continuous stream of complaints; note that the bad values
+## are still pretty good < 20ms, rather that several tens or hundeds of ms
+2017-07-10 03:07:35.261819 I | mvcc: store.index: compact 337242
+2017-07-10 03:07:35.262082 W | etcdserver: apply entries took too long [13.994439ms for 1 entries]
+2017-07-10 03:07:35.262089 W | etcdserver: avoid queries with large range/delete range!
+2017-07-10 03:07:35.263143 I | mvcc: finished scheduled compaction at 337242 (took 941.07µs)
+2017-07-10 03:12:19.918731 W | etcdserver: apply entries took too long [14.718207ms for 1 entries]
+2017-07-10 03:12:19.918753 W | etcdserver: avoid queries with large range/delete range!
+2017-07-10 03:12:28.952788 W | etcdserver: apply entries took too long [12.639508ms for 1 entries]
+2017-07-10 03:12:28.953021 W | etcdserver: avoid queries with large range/delete range!
+2017-07-10 03:12:35.280160 I | mvcc: store.index: compact 337662
+2017-07-10 03:12:35.280459 W | etcdserver: apply entries took too long [14.713842ms for 1 entries]
+2017-07-10 03:12:35.280468 W | etcdserver: avoid queries with large range/delete range!
+2017-07-10 03:12:35.281334 I | mvcc: finished scheduled compaction at 337662 (took 797.631µs)
+
+```
+
+## Conclusion
+
+We have inspected the etcd store using the v3 APIs. We have also had a teardown of the etcd as installed
+by kubeadm and experienced the disk latency issue.
+
+etcd disk latency is addressed in:
+* [etcd FAQ](https://coreos.com/etcd/docs/latest/faq.html); search for "apply entries took too long"
+* [improve disk priority](https://coreos.com/etcd/docs/latest/tuning.html):  `$ sudo ionice -c2 -n0 -p `pgrep etcd`
+* 10ms is too stringent: kubernetes 1.7 uses etcd 3.0.14. Even with an SSD backing `/var/lib/etcd` (of course running
+  in a VM makes things much worse), we may get latencies > 10ms thus triggering a warning. In newer versions of etcd 3,
+  the threshold is now [100ms](https://github.com/kubernetes/kubernetes/issues/43363).
+  In our test scenarios, the HD backing file would still have triggered warnings, but the
+  SSD backing file would have been fine.  
