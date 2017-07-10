@@ -139,14 +139,14 @@ observe etcd complaining about bad latencies.
 ```sh
 ## the qcow2 image backing kube0 is on a regular HD
 ## watch etcd complain about horrible disk latences
-## you will get a continuous stream of complaints...
+## you will get a continuous stream of warnings...
 
 sudo -u centos kubelet logs -f etcd-kube0 -n kube-system
 ```
 
 Output:
 ```
-## non-stop complaints due to crappy latency:
+## non-stop warnings due to crappy latency:
 ## disk contention with docker, and we are running in a VM
 ## using a qcow2 backing file on a regular HD
 2017-07-09 07:16:49.497594 W | etcdserver: apply entries took too long [561.342142ms for 1 entries]
