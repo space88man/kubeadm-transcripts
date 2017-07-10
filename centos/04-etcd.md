@@ -231,7 +231,7 @@ by kubeadm and experienced the disk latency issue.
 
 etcd disk latency is addressed in:
 * [etcd FAQ](https://coreos.com/etcd/docs/latest/faq.html); search for "apply entries took too long"
-* [improve disk priority](https://coreos.com/etcd/docs/latest/tuning.html):  `$ sudo ionice -c2 -n0 -p `pgrep etcd`
+* [improve disk priority](https://coreos.com/etcd/docs/latest/tuning.html):  `$ sudo ionice -c2 -n0 -p \`pgrep etcd\``
 * 10ms is too stringent: kubernetes 1.7 uses etcd 3.0.14. Even with an SSD backing `/var/lib/etcd` (of course running
   in a VM makes things much worse), we may get latencies > 10ms thus triggering a warning. In newer versions of etcd 3,
   the threshold is now [100ms](https://github.com/kubernetes/kubernetes/issues/43363).
