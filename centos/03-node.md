@@ -249,6 +249,79 @@ user-db-3152184577-qp5h1        1/1       Running   1          4h        10.36.0
 ```
 
 
+## Node Removal
+
+```sh
+## on master kube0
+
+kubectl drain kube2 --delete-local-data --force --ignore-daemonsets
+
+## reset a node
+ssh kube2 kubeadm reset
+kubectl delete node kube2
+```
+
+Output:
+```
+[root@kube0 centos]# kubectl drain kube2 --delete-local-data --force --ignore-daemonsets                                                  
+node "kube2" cordoned
+WARNING: Ignoring DaemonSet-managed pods: kube-proxy-45mlv, weave-net-0lhn5; Deleting pods with local storage: orders-db-3728196820-nzjgv, user-db-3152184577-qp5h1
+pod "catalogue-db-1846494424-d64vz" evicted
+pod "user-db-3152184577-qp5h1" evicted
+pod "sshd-1824442106-vd0dr" evicted
+pod "orders-db-3728196820-nzjgv" evicted
+pod "payment-3050936124-ssx0t" evicted
+pod "queue-master-2067646375-cfqjf" evicted
+pod "front-end-2337481689-1fg7x" evicted
+node "kube2" drained
+
+[root@kube0 centos]# ssh kube2 kubeadm reset
+[preflight] Running pre-flight checks
+[reset] Stopping the kubelet service
+[reset] Unmounting mounted directories in "/var/lib/kubelet"
+[reset] Removing kubernetes-managed containers
+[reset] No etcd manifest found in "/etc/kubernetes/manifests/etcd.yaml", assuming external etcd.
+[reset] Deleting contents of stateful directories: [/var/lib/kubelet /etc/cni/net.d /var/lib/dockershim]
+[reset] Deleting contents of config directories: [/etc/kubernetes/manifests /etc/kubernetes/pki]
+[reset] Deleting files: [/etc/kubernetes/admin.conf /etc/kubernetes/kubelet.conf /etc/kubernetes/controller-manager.conf /etc/kubernetes/scheduler.conf]
+
+[root@kube0 centos]# kubectl get nodes
+NAME      STATUS                        AGE       VERSION
+kube0     Ready                         3d        v1.7.0
+kube1     Ready                         3d        v1.7.0
+kube2     NotReady,SchedulingDisabled   3d        v1.7.0
+kube3     Ready                         3d        v1.7.0
+
+[root@kube0 centos]# kubectl delete node kube2
+node "kube2" deleted
+```
+
+Verify:
+```
+[root@kube0 centos]# kubectl get nodes
+NAME      STATUS    AGE       VERSION
+kube0     Ready     3d        v1.7.0
+kube1     Ready     3d        v1.7.0
+kube3     Ready     3d        v1.7.0
+
+## sock-shop pods have been moved
+[root@kube0 centos]# kubectl get po -n sock-shop -o wide                                                                                                      
+NAME                            READY     STATUS    RESTARTS   AGE       IP           NODE
+carts-2469883122-4x0gs          1/1       Running   3          3d        10.44.0.18   kube1
+carts-db-1721187500-b9nj7       1/1       Running   3          3d        10.44.0.16   kube1
+catalogue-4293036822-r6sjt      1/1       Running   3          3d        10.44.0.14   kube1
+catalogue-db-1846494424-6km64   1/1       Running   0          5m        10.42.0.21   kube3
+front-end-2337481689-m84f2      1/1       Running   0          5m        10.42.0.17   kube3
+orders-733484335-sj8hb          1/1       Running   3          3d        10.44.0.19   kube1
+orders-db-3728196820-pfnsc      1/1       Running   0          5m        10.42.0.15   kube3
+payment-3050936124-btnf7        1/1       Running   0          5m        10.42.0.18   kube3
+queue-master-2067646375-7lz33   1/1       Running   0          5m        10.42.0.19   kube3
+rabbitmq-241640118-3hr9r        1/1       Running   3          3d        10.44.0.11   kube1
+shipping-2463450563-n7f5f       1/1       Running   3          3d        10.44.0.20   kube1
+user-1574605338-5phcq           1/1       Running   3          3d        10.44.0.17   kube1
+user-db-3152184577-27qp7        1/1       Running   0          5m        10.42.0.20   kube3
+```
+
 ## Conclusion
 
 We have observed the behaviour of the cluster when one node goes down,
