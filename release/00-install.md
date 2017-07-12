@@ -105,13 +105,13 @@ pdsh -g kubes yum -y install kubelet kubeadm
 Verify:
 
 ```
-# rpm -qa | grep kube
+[root@kube0 install]# rpm -qa | grep kube
 kubectl-1.7.0-0.x86_64
 kubernetes-cni-0.5.1-0.x86_64
 kubeadm-1.7.0-0.x86_64
 kubelet-1.7.0-0.x86_64
 
-# [root@kube0 install]# kubectl version
+[root@kube0 install]# kubectl version
 Client Version: version.Info{Major:"1", Minor:"7", GitVersion:"v1.7.0", GitCommit:"d3ada0119e776222f11ec7945e6d860061339aad", GitTreeState:"clean", BuildDate:"2017-06-29T23:15:59Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
 
 ```
