@@ -4,6 +4,15 @@
 ## It stops and deletes all docker containers and 
 ## removes all configuration by kubeadm
 
+function usage {
+    echo "Usage: manage.sh cleanup|stop|wipe"
+    echo "stop: stops all docker containers"
+    echo "cleanup: removes ALL docker containers"
+    echo "wipe: removes all kubernetes configuration set up by kubeadm"
+}
+
+[ -n "$1" ] || { usage; exit 1; }
+
 if [ $1 = 'cleanup' ]; then
    docker rm $(docker ps -a --format '{{.Names}}')
    exit 0
@@ -20,7 +29,3 @@ if [ $1 = 'wipe' ]; then
    exit 0
 fi
 
-echo "Usage: manage.sh cleanup|stop|wipe"
-echo "stop: stops all docker containers"
-echo "cleanup: removes ALL docker containers"
-echo "wipe: removes all kubernetes configuration set up by kubeadm"
