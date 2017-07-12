@@ -127,7 +127,7 @@ Install a recovery script. *Transcript*:
 ## install a shell script on each node to nuke-n-pave whatever kubeadm does
 ## this script takes one argument: stop|cleanup|wipe
 ##     stop: stops ALL containers
-##     cleanup: deletes ALL containers, preserves images to avoid having do download them again
+##     cleanup: deletes ALL containers, preserves images to avoid having to download them again
 ##     wipe: removes kubenetes configuration files created by kubeadm
 
 cd /opt/install
