@@ -1,4 +1,4 @@
-# 00 Installation
+# Installation
 
 In this transcript we install kubeadm  until just before a network add-on.
 All pods will be running except for kube-dns (to be expected, since we don't have a network).
@@ -139,7 +139,7 @@ pdsh -g kubes chmod +x /opt/install/manage.sh
 
 Usage:
 
-```sh
+```
 ## If kubeadm has been run we can use this script to clean up...
 [root@kube0 centos] pdsh -g kubes systemctl stop kubelet
 
@@ -182,7 +182,7 @@ Alternative: `kubeadm` provides a `reset` argument to undo its configuration. *T
 pdsh -g kubes kubeadm reset
 ```
 
-Example:
+Output:
 ```
 ## here we use kubeadm reset to revert to a clean state
 [root@kube0 install]# kubeadm reset
@@ -221,17 +221,13 @@ EOF
 
 pdcp -g kubes 10-docker.conf /etc/sysctl.d/10-docker.conf
 
-
-
-
-## now bootstrap kubeadm, this is only run on the master: kube0
+## now bootstrap the master node using kubeadm
 kubeadm init
 
 ```
 
-Verify:
+Output:
 ```
-### output of kubeadm init
 [root@kube0 install]# kubeadm init
 [kubeadm] WARNING: kubeadm is in beta, please do not use it for production clusters.
 [init] Using Kubernetes version: v1.7.0
@@ -296,7 +292,6 @@ Verify:
 Client Version: version.Info{Major:"1", Minor:"7", GitVersion:"v1.7.0", GitCommit:"d3ada0119e776222f11ec7945e6d860061339aad", GitTreeState:"clean", BuildDate:"2017-06-29T23:15:59Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
 Server Version: version.Info{Major:"1", Minor:"7", GitVersion:"v1.7.0", GitCommit:"d3ada0119e776222f11ec7945e6d860061339aad", GitTreeState:"clean", BuildDate:"2017-06-29T22:55:19Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
 
-
 [root@kube0 install]# sudo -u centos kubectl get po -n kube-system
 NAME                            READY     STATUS              RESTARTS   AGE
 etcd-kube0                      1/1       Running             0          6m
@@ -310,7 +305,7 @@ kube-scheduler-kube0            1/1       Running             0          6m
 
 ## Conclusion
 
-At this stage we have successfully bootstraped kubernetes without network. The user centos, is a non-root cluster-admin. This user is authenticated and authorised to kubernetes using the credentials in `~centos/.kube/config`.
+At this stage we have successfully bootstraped kubernetes without network. The user 'centos', is a non-root cluster-admin. This user is authenticated and authorised to kubernetes using the credentials in `~centos/.kube/config`.
 
 We will go deeper into kubernetes RBAC (role-based access control) later.
 
