@@ -116,6 +116,86 @@ Client Version: version.Info{Major:"1", Minor:"7", GitVersion:"v1.7.0", GitCommi
 
 ```
 
+## Revert: Nuke-n-Pave
+
+We install a script to revert the system to a pre-kubeadm state. Use this to get out of an
+unrecoverable installation or to redo the task.
+
+Install a recovery script. *Transcript*:
+
+```sh
+## install a shell script on each node to nuke-n-pave whatever kubeadm does
+## this script takes one argument: stop|cleanup|wipe
+##     stop: stops ALL containers
+##     cleanup: deletes ALL containers, preserves images to avoid having do download them again
+##     wipe: removes kubenetes configuration files created by kubeadm
+
+cd /opt/install
+curl -o /opt/install/manage.sh https://raw.githubusercontent.com/space88man/kubeadm-transcripts/master/scripts/manage.sh
+pdsh -g nodes mkdir -p /opt/install
+pdcp -g nodes manage.sh /opt/install/manage.sh
+pdsh -g kubes chmod +x /opt/install/manage.sh
+```
+
+Usage:
+
+```sh
+## If kubeadm has been run we can use this script to clean up...
+[root@kube0 centos] pdsh -g systemctl stop kubelet
+
+## this stops ALL containers
+nstall]# pdsh -g kubes /opt/install/manage.sh stop
+kube1: k8s_rabbitmq_rabbitmq-241640118-0chx6_sock-shop_3c5f97f2-6647-11e7-96fb-52540021eccc_0
+kube0: k8s_sidecar_kube-dns-2425271678-v9ztq_kube-system_bd1634cf-6645-11e7-96fb-52540021eccc_0
+kube1: k8s_user_user-1574605338-jhx4x_sock-shop_3ee9ba5c-6647-11e7-96fb-52540021eccc_0
+kube3: k8s_user-db_user-db-3152184577-wp981_sock-shop_3de44e75-6647-11e7-96fb-52540021eccc_0
+
+## this deletes ALL containers
+[root@kube0 install]# pdsh -g kubes /opt/install/manage.sh cleanup
+kube0: k8s_sidecar_kube-dns-2425271678-v9ztq_kube-system_bd1634cf-6645-11e7-96fb-52540021eccc_0
+kube2: k8s_shipping_shipping-2463450563-6svf9_sock-shop_3d4053f9-6647-11e7-96fb-52540021eccc_0
+kube3: k8s_user-db_user-db-3152184577-wp981_sock-shop_3de44e75-6647-11e7-96fb-52540021eccc_0
+kube1: k8s_rabbitmq_rabbitmq-241640118-0chx6_sock-shop_3c5f97f2-6647-11e7-96fb-52540021eccc_0
+kube0: k8s_dnsmasq_kube-dns-2425271678-v9ztq_kube-system_bd1634cf-6645-11e7-96fb-52540021eccc_0
+
+## this wipes all configuration created by kubeadm
+[root@kube0 install]# pdsh -g kubes /opt/install/manage.sh wipe
+kube2: umount: /var/lib/kubelet/pods/3642ad54-6647-11e7-96fb-52540021eccc/containers/carts-db/79c40f2a: not mounted
+kube2: umount: /var/lib/kubelet/pods/3642ad54-6647-11e7-96fb-52540021eccc/plugins/kubernetes.io~empty-dir/tmp-volume: not mounted
+kube2: umount: /var/lib/kubelet/pods/3642ad54-6647-11e7-96fb-52540021eccc/plugins/kubernetes.io~empty-dir/wrapped_default-token-4zxvh: not mounted
+kube0: umount: /var/lib/kubelet/pods/2114fde9-6646-11e7-96fb-52540021eccc/containers/weave/2ad3c710: not mounted
+
+## now we need to reboot the nodes
+[root@kube0 install]# pdsh -g nodes reboot
+kube3: Connection to kube3 closed by remote host.
+pdsh@kube0: kube3: ssh exited with exit code 255
+kube2: Connection to kube2 closed by remote host.
+pdsh@kube0: kube2: ssh exited with exit code 255
+kube1: Connection to kube1 closed by remote host.
+pdsh@kube0: kube1: ssh exited with exit code 255
+[root@kube0 install]# reboot
+```
+
+Alternative: `kubeadm` provides a `reset` argument to undo its configuration. *Transcript*:
+```sh
+## use kubeadm reset argument
+pdsh -g kubes kubeadm reset
+```
+
+Example:
+```
+## here we use kubeadm reset to revert to a clean state
+[root@kube0 install]# kubeadm reset
+[preflight] Running pre-flight checks
+[reset] Stopping the kubelet service
+[reset] Unmounting mounted directories in "/var/lib/kubelet"
+[reset] Removing kubernetes-managed containers
+[reset] Deleting contents of stateful directories: [/var/lib/kubelet /etc/cni/net.d /var/lib/dockershim /var/lib/etcd]
+[reset] Deleting contents of config directories: [/etc/kubernetes/manifests /etc/kubernetes/pki]
+[reset] Deleting files: [/etc/kubernetes/admin.conf /etc/kubernetes/kubelet.conf /etc/kubernetes/controller-manager.conf /etc/kubernetes/scheduler.conf]
+```
+
+
 ## Bootstrap
 
 In this transcript we get kubernetes running prior to a network.
