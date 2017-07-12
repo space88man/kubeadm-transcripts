@@ -246,6 +246,6 @@ gcr.io/google_containers/kube-scheduler-amd64            v1.7.0              5c9
 gcr.io/google_containers/k8s-dns-sidecar-amd64           1.14.4              38bac66034a6        11 days ago         41.81 MB
 gcr.io/google_containers/k8s-dns-kube-dns-amd64          1.14.4              a8e00546bcf3        11 days ago         49.38 MB
 gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64     1.14.4              f7f45b9cb733        11 days ago         41.41 MB
-gcr.io/google_containers/etcd-amd64                      3.0.14-kubeadm      856e39ac7be3        7 months ago        174.9 MB
+gcr.io/google_containers/etcd-amd64                      3.0.17              243830dae7dd        4 months ago        168.9 MB
 gcr.io/google_containers/pause-amd64                     3.0                 99e59f495ffa        14 months ago       746.9 kB
 ```
