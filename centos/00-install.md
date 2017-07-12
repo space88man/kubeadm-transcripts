@@ -141,7 +141,7 @@ Usage:
 
 ```sh
 ## If kubeadm has been run we can use this script to clean up...
-[root@kube0 centos] pdsh -g systemctl stop kubelet
+[root@kube0 centos] pdsh -g kubes systemctl stop kubelet
 
 ## this stops ALL containers
 nstall]# pdsh -g kubes /opt/install/manage.sh stop
