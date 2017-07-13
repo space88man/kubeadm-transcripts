@@ -54,7 +54,7 @@ watch sudo -u centos kubectl get po -n kube-system
 ## ...installing...
 Every 2.0s: sudo -u centos kubectl get po -n kube-system                                                         Fri Jul  7 08:55:20 2017
 
-NAME                            READY     STATUS              RESTARTS   AGE
+NAME                            READY     STATUS              RESTARTS   AGE       IP                NODE
 etcd-kube0                      1/1       Running             0          2m        192.168.125.100   kube0
 kube-apiserver-kube0            1/1       Running             0          2m        192.168.125.100   kube0
 kube-controller-manager-kube0   1/1       Running             0          2m        192.168.125.100   kube0
@@ -67,7 +67,7 @@ weave-net-txhng                 2/2       Running             0          1m     
 ## Success!!
 Every 2.0s: sudo -u centos kubectl get po -n kube-system                                                         Fri Jul  7 08:56:29 2017
 
-NAME                            READY     STATUS    RESTARTS   AGE
+NAME                            READY     STATUS    RESTARTS   AGE       IP                NODE
 etcd-kube0                      1/1       Running   0          2m        192.168.125.100   kube0
 kube-apiserver-kube0            1/1       Running   0          2m        192.168.125.100   kube0
 kube-controller-manager-kube0   1/1       Running   0          2m        192.168.125.100   kube0
@@ -84,7 +84,7 @@ Finally we can join worker nodes, by default, user pods are not run on the maste
 
 ### Workaround Bug #335
 
-When we join the worker nodes we may hit kubeadm issue (#335)[https://github.com/kubernetes/kubeadm/issues/335].
+When we join the worker nodes we may hit kubeadm issue [#335](https://github.com/kubernetes/kubeadm/issues/335).
 
 When we try to join a node we will get the following error message:
 Output:
