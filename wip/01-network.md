@@ -263,6 +263,29 @@ kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
 
 ```
 
+A word about IP addresses: service address like 10.96.0.10 are typically not ping-able, as they are handled
+by destination NAT (DNAT) only for UDP/TCP. Pod addresses like 10.32.0.10 are ping-able.
+
+Output:
+```
+[root@kube0 install]# ping -c 5 10.96.0.10
+PING 10.96.0.10 (10.96.0.10) 56(84) bytes of data.
+
+--- 10.96.0.10 ping statistics ---
+5 packets transmitted, 0 received, 100% packet loss, time 4131ms
+
+[root@kube0 install]# ping -c 5 10.32.0.10
+PING 10.32.0.10 (10.32.0.10) 56(84) bytes of data.
+64 bytes from 10.32.0.10: icmp_seq=1 ttl=64 time=0.059 ms
+64 bytes from 10.32.0.10: icmp_seq=2 ttl=64 time=0.036 ms
+64 bytes from 10.32.0.10: icmp_seq=3 ttl=64 time=0.037 ms
+64 bytes from 10.32.0.10: icmp_seq=4 ttl=64 time=0.036 ms
+64 bytes from 10.32.0.10: icmp_seq=5 ttl=64 time=0.028 ms
+
+--- 10.32.0.10 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4108ms
+rtt min/avg/max/mdev = 0.028/0.039/0.059/0.011 ms
+```
 
 ## Conclusion
 
