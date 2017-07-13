@@ -14,6 +14,20 @@ In other transcripts, we will try flannel and romana.
 
 Weave recommends using the network add-on rather than integrating kubernetes with an external configured weave SDN.
 
+As we may have rebuild the cluster several time since the previous task here is the start state:
+
+Output:
+```
+[root@kube0 ~]# sudo -u centos kubectl get po -n kube-system -o wide
+NAME                            READY     STATUS    RESTARTS   AGE       IP                NODE
+etcd-kube0                      1/1       Running   0          27s       192.168.125.100   kube0
+kube-apiserver-kube0            1/1       Running   0          26s       192.168.125.100   kube0
+kube-controller-manager-kube0   1/1       Running   0          27s       192.168.125.100   kube0
+kube-dns-2425271678-kd1j5       0/3       Pending   0          18s       <none>            <none>
+kube-proxy-3gvrl                1/1       Running   0          18s       192.168.125.100   kube0
+kube-scheduler-kube0            1/1       Running   0          26s       192.168.125.100   kube0
+```
+
 *Transcript*:
 
 ```sh
@@ -40,27 +54,27 @@ watch sudo -u centos kubectl get po -n kube-system
 ## ...installing...
 Every 2.0s: sudo -u centos kubectl get po -n kube-system                                                         Fri Jul  7 08:55:20 2017
 
-NAME                            READY     STATUS              RESTARTS   AGE
-etcd-kube0                      1/1       Running             0          51m
-kube-apiserver-kube0            1/1       Running             0          51m
-kube-controller-manager-kube0   1/1       Running             1          51m
-kube-dns-2425271678-n3qv2       0/3       ContainerCreating   0          51m
-kube-proxy-72t5t                1/1       Running             0          51m
-kube-scheduler-kube0            1/1       Running             0          50m
-weave-net-nttn5                 2/2       Running             0          35s
+NAME                            READY     STATUS              RESTARTS   AGE       IP                NODE
+etcd-kube0                      1/1       Running             0          2m        192.168.125.100   kube0
+kube-apiserver-kube0            1/1       Running             0          2m        192.168.125.100   kube0
+kube-controller-manager-kube0   1/1       Running             0          2m        192.168.125.100   kube0
+kube-dns-2425271678-kd1j5       3/3       ContainerCreating   0          2m        10.32.0.10        kube0
+kube-proxy-3gvrl                1/1       Running             0          2m        192.168.125.100   kube0
+kube-scheduler-kube0            1/1       Running             0          2m        192.168.125.100   kube0
+weave-net-txhng                 2/2       Running             0          1m        192.168.125.100   kube0
+
 
 ## Success!!
 Every 2.0s: sudo -u centos kubectl get po -n kube-system                                                         Fri Jul  7 08:56:29 2017
 
-NAME                            READY     STATUS    RESTARTS   AGE
-etcd-kube0                      1/1       Running   0          52m
-kube-apiserver-kube0            1/1       Running   0          52m
-kube-controller-manager-kube0   1/1       Running   1          53m
-kube-dns-2425271678-n3qv2       3/3       Running   0          52m
-kube-proxy-72t5t                1/1       Running   0          52m
-kube-scheduler-kube0            1/1       Running   0          52m
-weave-net-nttn5                 2/2       Running   0          1m 
-
+NAME                            READY     STATUS    RESTARTS   AGE       IP                NODE
+etcd-kube0                      1/1       Running   0          2m        192.168.125.100   kube0
+kube-apiserver-kube0            1/1       Running   0          2m        192.168.125.100   kube0
+kube-controller-manager-kube0   1/1       Running   0          2m        192.168.125.100   kube0
+kube-dns-2425271678-kd1j5       3/3       Running   0          2m        10.32.0.10        kube0
+kube-proxy-3gvrl                1/1       Running   0          2m        192.168.125.100   kube0
+kube-scheduler-kube0            1/1       Running   0          2m        192.168.125.100   kube0
+weave-net-txhng                 2/2       Running   0          1m        192.168.125.100   kube0
 
 ```
 
@@ -68,6 +82,39 @@ weave-net-nttn5                 2/2       Running   0          1m
 
 Finally we can join worker nodes, by default, user pods are not run on the master node.
 
+### Workaround Bug #335
+
+When we join the worker nodes we may hit kubeadm issue [#335](https://github.com/kubernetes/kubeadm/issues/335).
+
+When we try to join a node we will get the following error message:
+Output:
+```
+[root@kube0 install]# pdsh -g nodes kubeadm join --token 3cb88f.5abad237ba22513c 192.168.125.100:6443
+
+kube1: [discovery] Failed to connect to API Server "192.168.125.100:6443": there is no JWS signed token in the cluster-info ConfigMap. This token id "3cb88f" is invalid for this cluster, can't connect
+kube2: [discovery] Failed to connect to API Server "192.168.125.100:6443": there is no JWS signed token in the cluster-info ConfigMap. This token id "3cb88f" is invalid for this cluster, can't connect
+kube3: [discovery] Failed to connect to API Server "192.168.125.100:6443": there is no JWS signed token in the cluster-info ConfigMap. This token id "3cb88f" is invalid for this cluster, can't connect
+```
+
+*Transcript*:
+```sh
+## we may hit issue #335 and our worker nodes will fail to join
+## this is a workaround. On kube0
+cd /opt/install
+curl -o bug335.yaml https://raw.githubusercontent.com/space88man/kubeadm-transcripts/master/scripts/bug335.yaml
+sudo -u centos kubectl apply -f bug335.yaml
+
+```
+
+Output:
+```
+root@kube0 install]# sudo -u centos kubectl apply -f bug335.yaml 
+role "system:controller:bootstrap-signer" created
+rolebinding "system:controller:bootstrap-signer" created
+```
+
+
+### Join Worker Nodes
 
 *Transcript*:
 
@@ -151,23 +198,93 @@ kube3     Ready     2m        v1.7.0
 
 ## polling for weave-net-* pods to be Running
 watch sudo -u centos kubectl get po -n kube-system
-Every 2.0s: sudo -u centos kubectl get po -n kube-system                                                         Fri Jul  7 09:02:04 2017
+Every 2.0s: sudo -u centos kubectl get po -n kube-system                     ul  7 09:02:04 2017
+NAME                            READY     STATUS    RESTARTS   AGE       IP                NODE
+etcd-kube0                      1/1       Running   0          15m       192.168.125.100   kube0
+kube-apiserver-kube0            1/1       Running   0          15m       192.168.125.100   kube0
+kube-controller-manager-kube0   1/1       Running   0          15m       192.168.125.100   kube0
+kube-dns-2425271678-kd1j5       3/3       Running   0          14m       10.32.0.10        kube0
+kube-proxy-3gvrl                1/1       Running   0          14m       192.168.125.100   kube0
+kube-proxy-4qdpx                1/1       Running   0          10m       192.168.125.103   kube3
+kube-proxy-jjd9w                1/1       Running   0          10m       192.168.125.101   kube1
+kube-proxy-t99b2                1/1       Running   0          9m        192.168.125.102   kube2
+kube-scheduler-kube0            1/1       Running   0          15m       192.168.125.100   kube0
+weave-net-mjz0c                 2/2       Running   1          10m       192.168.125.103   kube3
+weave-net-s35tk                 2/2       Running   1          10m       192.168.125.101   kube1
+weave-net-txhng                 2/2       Running   0          13m       192.168.125.100   kube0
+weave-net-x7fmr                 2/2       Running   0          9m        192.168.125.102   kube2
+```
 
-NAME                            READY     STATUS    RESTARTS   AGE
-etcd-kube0                      1/1       Running   0          57m
-kube-apiserver-kube0            1/1       Running   0          57m
-kube-controller-manager-kube0   1/1       Running   1          58m
-kube-dns-2425271678-n3qv2       3/3       Running   0          58m
-kube-proxy-45mlv                1/1       Running   0          3m
-kube-proxy-72t5t                1/1       Running   0          58m
-kube-proxy-ntbvj                1/1       Running   0          3m
-kube-proxy-r26dv                1/1       Running   0          3m
-kube-scheduler-kube0            1/1       Running   0          57m
-weave-net-0lhn5                 2/2       Running   0          3m
-weave-net-4b472                 2/2       Running   0          3m
-weave-net-f91q1                 2/2       Running   0          3m
-weave-net-nttn5                 2/2       Running   0          7m
 
+## Smoke Test
+
+In our virgin cluster, we have an application pod, providing the kube-dns service.
+ This service provides named ports so we can test SRV resolution as well.
+
+Output:
+
+```
+### some output lines omitted 
+[root@kube0 install]# sudo -u centos kubectl get svc -n kube-system
+NAME       CLUSTER-IP   EXTERNAL-IP   PORT(S)         AGE
+kube-dns   10.96.0.10   <none>        53/UDP,53/TCP   17m
+[root@kube0 install]# dig @10.96.0.10 kube-dns.kube-system.svc.cluster.local
+
+
+;; QUESTION SECTION:
+;kube-dns.kube-system.svc.cluster.local.	IN A
+
+;; ANSWER SECTION:
+kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
+
+[root@kube0 install]# dig @10.96.0.10 -t SRV _dns._udp.kube-dns.kube-system.svc.cluster.local
+
+
+;; QUESTION SECTION:
+;_dns._udp.kube-dns.kube-system.svc.cluster.local. IN SRV
+
+;; ANSWER SECTION:
+_dns._udp.kube-dns.kube-system.svc.cluster.local. 30 IN	SRV 10 100 53 kube-dns.kube-system.svc.cluster.local.
+
+;; ADDITIONAL SECTION:
+kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
+
+[root@kube0 install]# dig @10.96.0.10 -t SRV _dns-tcp._tcp.kube-dns.kube-system.svc.cluster.local
+
+
+;; QUESTION SECTION:
+;_dns-tcp._tcp.kube-dns.kube-system.svc.cluster.local. IN SRV
+
+;; ANSWER SECTION:
+_dns-tcp._tcp.kube-dns.kube-system.svc.cluster.local. 30 IN SRV	10 100 53 kube-dns.kube-system.svc.cluster.local.
+
+;; ADDITIONAL SECTION:
+kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
+
+```
+
+A word about IP addresses: service address like 10.96.0.10 are typically not ping-able, as they are handled
+by destination NAT (DNAT) only for UDP/TCP. Pod addresses like 10.32.0.10 are ping-able.
+
+Output:
+```
+[root@kube0 install]# ping -c 5 10.96.0.10
+PING 10.96.0.10 (10.96.0.10) 56(84) bytes of data.
+
+--- 10.96.0.10 ping statistics ---
+5 packets transmitted, 0 received, 100% packet loss, time 4131ms
+
+[root@kube0 install]# ping -c 5 10.32.0.10
+PING 10.32.0.10 (10.32.0.10) 56(84) bytes of data.
+64 bytes from 10.32.0.10: icmp_seq=1 ttl=64 time=0.059 ms
+64 bytes from 10.32.0.10: icmp_seq=2 ttl=64 time=0.036 ms
+64 bytes from 10.32.0.10: icmp_seq=3 ttl=64 time=0.037 ms
+64 bytes from 10.32.0.10: icmp_seq=4 ttl=64 time=0.036 ms
+64 bytes from 10.32.0.10: icmp_seq=5 ttl=64 time=0.028 ms
+
+--- 10.32.0.10 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4108ms
+rtt min/avg/max/mdev = 0.028/0.039/0.059/0.011 ms
 ```
 
 ## Conclusion
