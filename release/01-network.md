@@ -84,7 +84,7 @@ Finally we can join worker nodes, by default, user pods are not run on the maste
 
 ### Workaround Bug #335
 
-When we join the worker nodes we may hit kubeadm issue [#335](https://github.com/kubernetes/kubeadm/issues/335). We may the following error message:
+When we join the worker nodes we may hit kubeadm issue [#335](https://github.com/kubernetes/kubeadm/issues/335) with the the following error messages:
 
 Output:
 ```
