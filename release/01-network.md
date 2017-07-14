@@ -299,7 +299,7 @@ docker.io/weaveworks/weave-kube                          2.0.1               d20
 ```
 
 ## Appendix: Technical Background
-Various command to teardown the weave L2 10.32.0.0/12 network.
+Various commands to teardown the weave L2 10.32.0.0/12 network.
 
 Output:
 ```
