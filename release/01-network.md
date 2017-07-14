@@ -14,7 +14,7 @@ In other transcripts, we will try flannel and romana.
 
 Weave recommends using the network add-on rather than integrating kubernetes with an external configured weave SDN.
 
-As we may have rebuilt the cluster several time since the previous task here the start state:
+As we may have rebuilt the cluster several time since the previous task here is the start state:
 
 Output:
 ```
