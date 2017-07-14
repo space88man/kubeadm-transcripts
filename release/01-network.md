@@ -1,8 +1,8 @@
-# Network Transcript
+# Kubernetes Network Add-On
 
 In this transcript, we will install the weave network add-on. All our pods will get IP addresses
-on 10.32.0.0/12. Kubernetes will continue to assign services to 10.96.0.0/12 (standard network
-setup by kubeadm).
+in the range 10.32.0.0/12. Kubernetes will continue to assign services to 10.96.0.0/12 (standard service
+network setup by kubeadm).
 
 The mapping of externally visible service IP address/port to 10.96.0.0/12 to 10.32.0.0/12
 is handled transparently by kubernetes+network add-on.
@@ -14,7 +14,7 @@ In other transcripts, we will try flannel and romana.
 
 Weave recommends using the network add-on rather than integrating kubernetes with an external configured weave SDN.
 
-As we may have rebuild the cluster several time since the previous task here is the start state:
+As we may have rebuilt the cluster several time since the previous task here the start state:
 
 Output:
 ```
@@ -84,9 +84,8 @@ Finally we can join worker nodes, by default, user pods are not run on the maste
 
 ### Workaround Bug #335
 
-When we join the worker nodes we may hit kubeadm issue [#335](https://github.com/kubernetes/kubeadm/issues/335).
+When we join the worker nodes we may hit kubeadm issue [#335](https://github.com/kubernetes/kubeadm/issues/335). We may the following error message:
 
-When we try to join a node we will get the following error message:
 Output:
 ```
 [root@kube0 install]# pdsh -g nodes kubeadm join --token 3cb88f.5abad237ba22513c 192.168.125.100:6443
@@ -98,11 +97,12 @@ kube3: [discovery] Failed to connect to API Server "192.168.125.100:6443": there
 
 *Transcript*:
 ```sh
-## we may hit issue #335 and our worker nodes will fail to join
-## this is a workaround. On kube0
+## Issue #335 workaround: On kube0
 cd /opt/install
 curl -o bug335.yaml https://raw.githubusercontent.com/space88man/kubeadm-transcripts/master/scripts/bug335.yaml
 sudo -u centos kubectl apply -f bug335.yaml
+
+## this workaround creates some cluster objects that are missing due a race condition
 
 ```
 
@@ -296,4 +296,106 @@ The weave versions are:
 [root@kube0 install]# docker images | grep weave
 docker.io/weaveworks/weave-npc                           2.0.1               4f71bca714a3        7 days ago          54.69 MB
 docker.io/weaveworks/weave-kube                          2.0.1               d2099d50a03b        7 days ago          100.7 MB
+```
+
+## Appendix: Technical Background
+Various command to teardown the weave L2 10.32.0.0/12 network.
+
+Output:
+```
+## some lines omitted
+
+## the weave bridge for pods
+[root@kube0 centos]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+weave           8000.462a7f7cc746       no              vethwe-bridge
+                                                        vethwepl25f9fc2
+                                                        vethwepl2960693
+
+## the ovs(Open vSwitch) datapath for overlay networking
+[root@kube0 centos]# ip link show datapath
+4: datapath: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1376 qdisc noqueue state UNKNOWN mode DEFAULT qlen 1000
+    link/ether 8e:7f:80:80:17:82 brd ff:ff:ff:ff:ff:ff
+[root@kube0 centos]# ovs-dpctl show
+system@datapath:
+        lookups: hit:29076 missed:42033 lost:2
+        flows: 2
+        masks: hit:122896 total:2 hit/pkt:1.73
+        port 0: datapath (internal)
+        port 1: vethwe-datapath
+        port 2: vxlan-6784 (vxlan)
+
+## the enslaved ports
+[root@kube0 centos]# ip link show master datapath
+9: vethwe-datapath@vethwe-bridge: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1376 qdisc noqueue master datapath state UP mode DEFAULT 
+    link/ether fa:76:82:4e:d3:c4 brd ff:ff:ff:ff:ff:ff
+11: vxlan-6784: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 65485 qdisc noqueue master datapath state UNKNOWN mode DEFAULT qlen 1000
+    link/ether 2e:d4:bb:15:e9:ea brd ff:ff:ff:ff:ff:ff
+
+## the veth pair connecting weave to system@datapath
+[root@kube0 centos]# ip link show type veth
+9: vethwe-datapath@vethwe-bridge: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1376 qdisc noqueue master datapath state UP mode DEFAULT 
+    link/ether fa:76:82:4e:d3:c4 brd ff:ff:ff:ff:ff:ff
+10: vethwe-bridge@vethwe-datapath: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1376 qdisc noqueue master weave state UP mode DEFAULT 
+    link/ether 52:f9:2b:8d:6b:8c brd ff:ff:ff:ff:ff:ff
+	
+```
+
+There are vestiges of the Weave-as-SDN tooling hidden inside the add-on pods.
+Let's try a few of the commands.
+
+Output:
+```
+## choose one of the weave pods
+[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status 
+
+        Version: 2.0.1 (up to date; next check at 2017/07/14 19:00:32)
+
+        Service: router
+       Protocol: weave 1..2
+           Name: 46:2a:7f:7c:c7:46(kube0)
+     Encryption: disabled
+  PeerDiscovery: enabled
+        Targets: 1
+    Connections: 4 (3 established, 1 failed)
+          Peers: 4 (with 12 established connections)
+ TrustedSubnets: none
+
+        Service: ipam
+         Status: ready
+          Range: 10.32.0.0/12
+  DefaultSubnet: 10.32.0.0/12
+
+[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status peers
+46:2a:7f:7c:c7:46(kube0)
+   <- 192.168.125.102:55555 82:3b:a4:37:9a:41(kube2)              established
+   <- 192.168.125.103:58832 16:90:fd:eb:2a:b9(kube3)              established
+   <- 192.168.125.101:45256 ae:6b:ba:fc:9b:a2(kube1)              established
+82:3b:a4:37:9a:41(kube2)
+   <- 192.168.125.103:55619 16:90:fd:eb:2a:b9(kube3)              established
+   <- 192.168.125.101:43579 ae:6b:ba:fc:9b:a2(kube1)              established
+   -> 192.168.125.100:6783  46:2a:7f:7c:c7:46(kube0)              established
+16:90:fd:eb:2a:b9(kube3)
+   -> 192.168.125.100:6783  46:2a:7f:7c:c7:46(kube0)              established
+   <- 192.168.125.101:58330 ae:6b:ba:fc:9b:a2(kube1)              established
+   -> 192.168.125.102:6783  82:3b:a4:37:9a:41(kube2)              established
+ae:6b:ba:fc:9b:a2(kube1)
+   -> 192.168.125.100:6783  46:2a:7f:7c:c7:46(kube0)              established
+   -> 192.168.125.102:6783  82:3b:a4:37:9a:41(kube2)              established
+   -> 192.168.125.103:6783  16:90:fd:eb:2a:b9(kube3)              established
+
+[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status ipam
+46:2a:7f:7c:c7:46(kube0)                393216 IPs (37.5% of total) (11 active)
+82:3b:a4:37:9a:41(kube2)                262144 IPs (25.0% of total) 
+16:90:fd:eb:2a:b9(kube3)                131072 IPs (12.5% of total) 
+ae:6b:ba:fc:9b:a2(kube1)                262144 IPs (25.0% of total) 
+
+[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status connections
+<- 192.168.125.101:45256 established fastdp ae:6b:ba:fc:9b:a2(kube1) mtu=1376
+<- 192.168.125.102:55555 established fastdp 82:3b:a4:37:9a:41(kube2) mtu=1376
+<- 192.168.125.103:58832 established fastdp 16:90:fd:eb:2a:b9(kube3) mtu=1376
+-> 192.168.125.100:6783  failed      cannot connect to ourself, retry: never 
+
+## fastdp means that weave is using the openvswitch kernel module datapath
+
 ```
