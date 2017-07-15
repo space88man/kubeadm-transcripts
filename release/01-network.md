@@ -1,5 +1,8 @@
 # Kubernetes Network Add-On
 
+* v0.1.1 — openvswitch package for ovs-dpctl tool
+* v0.1 — initial release
+
 In this transcript, we will install the weave network add-on. All our pods will get IP addresses
 in the range 10.32.0.0/12. Kubernetes will continue to assign services to 10.96.0.0/12 (standard service
 network setup by kubeadm).
@@ -299,9 +302,21 @@ docker.io/weaveworks/weave-kube                          2.0.1               d20
 ```
 
 ## Appendix: Technical Background
-Various commands to teardown the weave L2 10.32.0.0/12 network.
+Various commands to teardown the weave L2 10.32.0.0/12 network. We need to install the openvswitch tool ovs-dpctl:
 
-Output:
+```sh
+yum -y install centos-release-ovirt41
+yum -y install openvswitch
+```
+
+Verify:
+```
+[centos@kube0 ~]$ rpm -q openvswitch
+openvswitch-2.7.0-1.el7.x86_64
+
+```
+
+Inspect the network devices created by weave:
 ```
 ## some lines omitted
 
@@ -316,6 +331,8 @@ weave           8000.462a7f7cc746       no              vethwe-bridge
 [root@kube0 centos]# ip link show datapath
 4: datapath: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1376 qdisc noqueue state UNKNOWN mode DEFAULT qlen 1000
     link/ether 8e:7f:80:80:17:82 brd ff:ff:ff:ff:ff:ff
+
+## ovs-dpctl is a command line utility to inspect datapaths
 [root@kube0 centos]# ovs-dpctl show
 system@datapath:
         lookups: hit:29076 missed:42033 lost:2
@@ -347,7 +364,7 @@ Let's try a few of the commands.
 Output:
 ```
 ## choose one of the weave pods
-[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status 
+[root@kube0 centos]# sudo -u centos kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status 
 
         Version: 2.0.1 (up to date; next check at 2017/07/14 19:00:32)
 
@@ -366,7 +383,7 @@ Output:
           Range: 10.32.0.0/12
   DefaultSubnet: 10.32.0.0/12
 
-[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status peers
+[root@kube0 centos]# sudo -u centos kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status peers
 46:2a:7f:7c:c7:46(kube0)
    <- 192.168.125.102:55555 82:3b:a4:37:9a:41(kube2)              established
    <- 192.168.125.103:58832 16:90:fd:eb:2a:b9(kube3)              established
@@ -384,13 +401,13 @@ ae:6b:ba:fc:9b:a2(kube1)
    -> 192.168.125.102:6783  82:3b:a4:37:9a:41(kube2)              established
    -> 192.168.125.103:6783  16:90:fd:eb:2a:b9(kube3)              established
 
-[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status ipam
+[root@kube0 centos]# sudo -u centos kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status ipam
 46:2a:7f:7c:c7:46(kube0)                393216 IPs (37.5% of total) (11 active)
 82:3b:a4:37:9a:41(kube2)                262144 IPs (25.0% of total) 
 16:90:fd:eb:2a:b9(kube3)                131072 IPs (12.5% of total) 
 ae:6b:ba:fc:9b:a2(kube1)                262144 IPs (25.0% of total) 
 
-[root@kube0 centos]# kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status connections
+[root@kube0 centos]# sudo -u centos kubectl exec weave-net-txhng --container weave -n kube-system -- /home/weave/weave --local status connections
 <- 192.168.125.101:45256 established fastdp ae:6b:ba:fc:9b:a2(kube1) mtu=1376
 <- 192.168.125.102:55555 established fastdp 82:3b:a4:37:9a:41(kube2) mtu=1376
 <- 192.168.125.103:58832 established fastdp 16:90:fd:eb:2a:b9(kube3) mtu=1376
