@@ -1,5 +1,7 @@
 # Installation
 
+* v0.1 — initial release
+
 In this transcript we install kubeadm  until just before a network add-on.
 All pods will be running except for kube-dns (to be expected, since we don't have a network).
 
@@ -277,7 +279,7 @@ Enable non-root cluster admin:
 ```sh
 ## wait for kubeadm init to finish, then enable non-root cluster-admin user
 
-sudo -u centos bash -s <<'EOF'
+sudo -u centos bash <<'EOF'
   mkdir -p $HOME/.kube
   sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
   sudo chown $(id -u):$(id -g) $HOME/.kube/config
